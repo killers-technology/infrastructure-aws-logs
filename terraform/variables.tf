@@ -47,6 +47,17 @@ variable "scope" {
 # Regional definitions only ------------------------------------------------------------------------
 # Optional so the global definition can leave them out; a regional definition must set every one.
 
+variable "bucket_name_prefix" {
+  description = "Prefix of the archive buckets' names (e.g. \"killers-technology-\"). S3 bucket names are unique across all AWS accounts, so a bare log-archive-<region> is almost certainly taken."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = can(regex("^([a-z0-9][a-z0-9.-]*-)?$", var.bucket_name_prefix))
+    error_message = "bucket_name_prefix must be empty or lowercase letters, digits, dots and hyphens, ending in a hyphen."
+  }
+}
+
 variable "organization_id" {
   description = "AWS Organizations ID. Only services acting for this organization may write here, and only its principals may decrypt."
   type        = string
