@@ -1,0 +1,19 @@
+# infrastructure-aws-logs/.github/workflows/terraform.yml
+name: terraform
+on:
+  pull_request:
+  push:
+    branches: [development, main]
+  workflow_dispatch:
+    inputs:
+      region:
+        description: Run a single region
+        required: false
+
+jobs:
+  terraform:
+    uses: killers-technology/infrastructure-workflows/.github/workflows/terraform.yml@v3.2.0
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write

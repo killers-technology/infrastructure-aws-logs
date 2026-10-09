@@ -1,0 +1,20 @@
+# Terraform working directories and local state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lock files are committed in the real repositories (one per repository, with
+# hashes for every CI platform). This example monorepo keeps them out.
+.terraform.lock.hcl
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
