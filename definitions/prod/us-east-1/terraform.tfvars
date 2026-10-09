@@ -24,4 +24,8 @@ noncurrent_version_expiration_days = 30
 # - role: output replication_role_arn of definitions/prod/global, applied before both regions;
 # - bucket and key: outputs bucket_arn and kms_key_arn of definitions/prod/us-west-2, applied first.
 # Set to null until that side exists.
-replication = null # e2e: set in a second step, destination first
+replication = {
+  role_arn                = "arn:aws:iam::352243449836:role/log-archive-replication"
+  destination_bucket_arn  = "arn:aws:s3:::killers-technology-log-archive-us-west-2"
+  destination_kms_key_arn = "arn:aws:kms:us-west-2:352243449836:key/30420a0f-ca14-41f9-951d-6fb7566abf50"
+}
