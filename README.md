@@ -2,7 +2,7 @@
 
 > Every account ships its logs here, and almost nobody can log in. If an account is compromised, the evidence of what happened is somewhere the attacker can't reach.
 
-The **Log Archive** account (`612062119759`, Security OU). Single environment (`prod`); the Security OU is the one place that isn't split by environment.
+The **Log Archive** account (`352243449836`, Security OU). Single environment (`prod`); the Security OU is the one place that isn't split by environment.
 
 | Definition | `scope` | State |
 |---|---|---|
@@ -20,12 +20,12 @@ All three deploy to the log-archive account. Resources are gated with `local.glo
 
 **Every region** (`prod/us-east-1`, `prod/us-west-2`):
 
-- **KMS key** `alias/log-archive-<region>`, with rotation on. Its policy allows:
+- **KMS key** `alias/killers-technology-log-archive-<region>`, with rotation on. Its policy allows:
   - IAM administration in this account;
   - **CloudTrail** to encrypt (`kms:GenerateDataKey*`), but only for the organization trail (`aws:SourceArn` and the `aws:cloudtrail:arn` encryption context are both pinned to the trail ARN);
   - **AWS Config** to encrypt, only on behalf of this organization (`aws:SourceOrgID`);
   - principals of the organization to decrypt (`aws:PrincipalOrgID`). That still isn't read access: a reader also needs `s3:GetObject` from this account, and the bucket policy grants it to no one.
-- **Bucket** `log-archive-<region>`:
+- **Bucket** `killers-technology-log-archive-<region>`:
   - versioning, plus **Object Lock** with a default retention (`object_lock_mode`, `object_lock_retention_days`);
   - SSE-KMS with the key above and an S3 Bucket Key;
   - public access fully blocked, `BucketOwnerEnforced` (ACLs off), TLS-only;
@@ -44,10 +44,10 @@ All three deploy to the log-archive account. Resources are gated with `local.glo
 | `organization_id` | `o-r5s2qddqgq` | the organization (docs/conventions.md) |
 | `organization_trail_arn` | `arn:aws:cloudtrail:us-east-1:301697000338:trail/organization-trail` | infrastructure-aws-security creates the trail (see below) |
 | `replication.destination_bucket_arn` | `arn:aws:s3:::log-archive-<other region>` | output `bucket_arn` of this project's other definition |
-| `replication.destination_kms_key_arn` | `arn:aws:kms:<other region>:612062119759:key/...` | output `kms_key_arn` of this project's other definition |
-| `replication.role_arn` | `arn:aws:iam::612062119759:role/log-archive-replication` | output `replication_role_arn` of this project's `prod/global` definition |
+| `replication.destination_kms_key_arn` | `arn:aws:kms:<other region>:352243449836:key/...` | output `kms_key_arn` of this project's other definition |
+| `replication.role_arn` | `arn:aws:iam::352243449836:role/log-archive-replication` | output `replication_role_arn` of this project's `prod/global` definition |
 
-**Why the trail ARN has the management account ID.** infrastructure-aws-security creates the trail from Security Tooling, the CloudTrail delegated administrator. AWS still makes the management account the owner of every organization trail. So the trail's ARN, `aws:SourceArn` and the `aws:cloudtrail:arn` encryption context all carry `301697000338`, not `887324111808`. If you pin the policies to the Security Tooling ARN, CloudTrail refuses to create the trail.
+**Why the trail ARN has the management account ID.** infrastructure-aws-security creates the trail from Security Tooling, the CloudTrail delegated administrator. AWS still makes the management account the owner of every organization trail. So the trail's ARN, `aws:SourceArn` and the `aws:cloudtrail:arn` encryption context all carry `301697000338`, not `352243449836`. If you pin the policies to the Security Tooling ARN, CloudTrail refuses to create the trail.
 
 ## What it publishes (outputs)
 
@@ -83,18 +83,18 @@ What gets replicated, and how:
 IAM is global, so the role is created by the global definition (`global.tf`), once, from us-east-1. One role serves both directions:
 
 - **Trust:** `s3.amazonaws.com`, only on behalf of this account (`aws:SourceAccount`).
-- **Permissions** (inline policy `replicate-log-archive`), on `log-archive-us-east-1` and `log-archive-us-west-2`:
+- **Permissions** (inline policy `replicate-log-archive`), on `killers-technology-log-archive-us-east-1` and `killers-technology-log-archive-us-west-2`:
   - source: `s3:GetReplicationConfiguration` and `s3:ListBucket` on the buckets; `s3:GetObjectVersionForReplication`, `s3:GetObjectVersionAcl`, `s3:GetObjectVersionTagging`, `s3:GetObjectRetention` and `s3:GetObjectLegalHold` on their objects;
   - destination: `s3:ReplicateObject`, `s3:ReplicateDelete` and `s3:ReplicateTags` on their objects;
   - keys: `kms:Decrypt`, `kms:Encrypt` and `kms:GenerateDataKey` on this account's keys of each region, only through S3 in that region (`kms:ViaService`) and only for that region's archive bucket (`kms:EncryptionContext:aws:s3:arn`).
 
-The bucket names come from the naming convention (`log-archive-<region>`, in `main.tf`), and the key statements are pinned by those conditions instead of by key ID, so the global definition never reads the regional states. The key policies already delegate to IAM in this account (the `AccountAdministration` statement): the role's own policy is enough to use both keys.
+The bucket names come from the naming convention (`killers-technology-log-archive-<region>`, in `main.tf`), and the key statements are pinned by those conditions instead of by key ID, so the global definition never reads the regional states. The key policies already delegate to IAM in this account (the `AccountAdministration` statement): the role's own policy is enough to use both keys.
 
 The apply role `github-logs-apply` may manage roles named `log-archive-*` only, including `iam:PassRole`, which S3 requires when the replication configuration names the role (granted by infrastructure-aws-management, which creates every pipeline role).
 
 ## Who writes here
 
-- The **organization trail**. It is multi-region and delivers to `log-archive-us-east-1`. The us-west-2 bucket accepts the same trail, so it can be repointed there if us-east-1 is lost.
+- The **organization trail**. It is multi-region and delivers to `killers-technology-log-archive-us-east-1`. The us-west-2 bucket accepts the same trail, so it can be repointed there if us-east-1 is lost.
 - **AWS Config** delivery channels of every account, region by region, through the `config.amazonaws.com` service principal. The channels belong to each account's baseline, not to this project.
 - **S3 replication**, from the other region.
 
